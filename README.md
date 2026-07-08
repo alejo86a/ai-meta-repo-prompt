@@ -57,6 +57,62 @@ If the host uses Claude Code, no extra config is needed — files in `.claude/co
 
 For other agent runtimes, register each `.md` file as a tool / prompt according to that runtime's convention.
 
+## Contributing (Git + Fine-grained token)
+
+This repository can be pushed with a GitHub fine-grained personal access token (PAT).
+
+### One-time local setup (first time only)
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/alejo86a/ai-meta-repo-prompt.git
+```
+
+If `origin` already exists, update it instead of adding it again:
+
+```bash
+git remote set-url origin https://github.com/alejo86a/ai-meta-repo-prompt.git
+```
+
+### Create a fine-grained token (required)
+
+In GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+
+Use these settings:
+
+- **Resource owner:** `alejo86a`
+- **Repository access:** **Only select repositories** → select `ai-meta-repo-prompt`
+- **Repository permissions:**
+	- **Contents:** `Read and write` (required for `git push`)
+	- **Metadata:** `Read-only` (usually auto-enabled)
+	- **Pull requests:** `Read and write` (optional, useful for PR workflows)
+
+Without **Repository access** set to this repo and **Contents = Read and write**, pushes fail with `403`.
+
+### Push using token
+
+Use a placeholder and replace it locally:
+
+```bash
+git push -u "https://x-access-token:INSERTA_AQUI_TU_TOKEN@github.com/alejo86a/ai-meta-repo-prompt.git" main
+```
+
+Safer alternative (does not leave token in shell history):
+
+```bash
+read -s GH_TOKEN
+git push -u "https://x-access-token:${GH_TOKEN}@github.com/alejo86a/ai-meta-repo-prompt.git" main
+unset GH_TOKEN
+```
+
+### Common errors
+
+- `403 Write access to repository not granted`: token exists, but does not have `Contents: Read and write` and/or repo access is not set to `ai-meta-repo-prompt`.
+- `404 Repository not found`: wrong owner/repo URL, or token cannot see that repository.
+
 ## Generating the demo SPA
 
 `generate-demo-frontend.md` is the odd one out — it's not a workflow command; it's a generator. Run it once per project. Workflow:
