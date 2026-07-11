@@ -2,6 +2,35 @@
 
 Portable Claude Code skills extracted from `the-hybrids-planning-project`, ready to drop into any other project. Project-specific names (YugaStore, MCP, Unleash, YugabyteDB) have been replaced with `<<PLACEHOLDERS>>` that the receiving agent must fill in before the skills run.
 
+## Just cloned this repo? Do this first
+
+```bash
+# 1. Enable the verification hook (blocks bad commits locally)
+git config core.hooksPath .githooks
+```
+
+That's the only setup step. The server-side safety net (a GitHub Action that re-runs the structural checks on every push/PR) is already wired in `.github/workflows/verify.yml` and needs no configuration. To later push your own changes with a fine-grained token, see [Contributing](#contributing-git--fine-grained-token).
+
+## Create your meta-repo (optimal starter prompt)
+
+Clone this folder **next to** the repositories you want it to study (they should be sibling folders under a common parent), then paste this to your coding agent (Copilot, Claude Code, etc.) opened at that parent folder:
+
+```text
+Read and execute ai-meta-repo-prompt/onboarding-prompt.md against every repository in this
+parent folder. Treat me as the approver: run Phase 0 discovery across all sibling repos
+(detect each repo's stack, languages, and existing conventions), then — with my consent —
+mine the last 20 PRs of each GitHub repo and merge that with official language rules.
+Produce the Phase 0 report and stop for my approval before writing anything. The final
+output must be a new standalone meta-repo/ folder whose AGENTS.md is a cross-repo context
+hub. Never modify the studied repositories.
+```
+
+Short version (if the agent already has this repo in context):
+
+```text
+Lee y ejecuta onboarding-prompt.md sobre todos los repositorios de esta carpeta y genera el meta-repo/.
+```
+
 ## Meta-repo creator (start here)
 
 `onboarding-prompt.md` is a **business-agnostic meta-repo creator**. Clone this folder next to the repositories you want it to study, then point an agent at it:
@@ -39,6 +68,8 @@ VERIFY_AGENT_DONE=1 git commit -m "…"
 ```
 
 Emergency bypass (discouraged): `git commit --no-verify`.
+
+**Server-side net:** `.github/workflows/verify.yml` re-runs Gate 0 on every push and pull request (`GATE0_ONLY=1 bash .githooks/pre-commit`), so structural regressions are caught even if someone commits with `--no-verify`. On CI the token scan widens to all tracked files, not just staged content.
 
 ## What's in the box
 
@@ -127,6 +158,7 @@ Use these settings:
 - **Repository permissions:**
 	- **Contents:** `Read and write` (required for `git push`)
 	- **Metadata:** `Read-only` (usually auto-enabled)
+	- **Workflows:** `Read and write` (required to push changes under `.github/workflows/`, e.g. `verify.yml`)
 	- **Pull requests:** `Read and write` (optional, useful for PR workflows)
 
 Without **Repository access** set to this repo and **Contents = Read and write**, pushes fail with `403`.
@@ -150,6 +182,7 @@ unset GH_TOKEN
 ### Common errors
 
 - `403 Write access to repository not granted`: token exists, but does not have `Contents: Read and write` and/or repo access is not set to `ai-meta-repo-prompt`.
+- `refusing to allow a Personal Access Token to create or update workflow ... without workflow scope`: the token lacks the **Workflows: Read and write** permission. Add it to the fine-grained token, then re-push.
 - `404 Repository not found`: wrong owner/repo URL, or token cannot see that repository.
 
 ## Generating the demo SPA

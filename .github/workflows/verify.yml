@@ -1,0 +1,25 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate0:
+    name: Gate 0 (structural integrity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Gate 0 checks
+        run: |
+          chmod +x .githooks/pre-commit
+          GATE0_ONLY=1 bash .githooks/pre-commit
+
+      - name: Reminder — deep agent battery
+        if: success()
+        run: |
+          echo "Gate 0 passed on CI."
+          echo "Deep gates (adversarial review + sandbox e2e) require an agent:"
+          echo "  run skills/verify-meta-repo.md locally before merging."
