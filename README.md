@@ -2,6 +2,24 @@
 
 Portable Claude Code skills extracted from `the-hybrids-planning-project`, ready to drop into any other project. Project-specific names (YugaStore, MCP, Unleash, YugabyteDB) have been replaced with `<<PLACEHOLDERS>>` that the receiving agent must fill in before the skills run.
 
+## Meta-repo creator (start here)
+
+`onboarding-prompt.md` is a **business-agnostic meta-repo creator**. Clone this folder next to the repositories you want it to study, then point an agent at it:
+
+```text
+Lee y ejecuta onboarding-prompt.md sobre los repositorios de esta carpeta.
+```
+
+What it does on the first run (all logic lives in `onboarding-prompt.md`, not in the trigger):
+
+1. **Studies every repo in the parent folder** — 2, 5, 10, however many — detecting stack, languages, and existing conventions.
+2. **Mines the last 20 PRs per repo** via `gh` (consent-gated, GitHub-only, best-effort; asks for a fine-grained token stored under a git-ignored `.env/` if needed) to learn the team's real, enforced review habits.
+3. **Fetches official language rules** from authoritative docs (Node.js, MDN, TypeScript, Oracle Java, PEP 8, Go, Kotlin…) and **merges** them with the mined practices into a business-specific standard.
+4. **Outputs a new `meta-repo/` folder** whose `AGENTS.md` is a cross-repo context hub. Point Copilot or a terminal agent at it (e.g. copy to `.github/copilot-instructions.md`) and questions/edits across the repo set become faster and more accurate.
+5. **Is deletable** afterwards (remove the creator so it isn't mistaken for a project repo) and **self-improving** (any later skill that spots drift proposes an approved update back to the meta-repo).
+
+The studied repositories are never modified.
+
 ## What's in the box
 
 | Skill | Purpose |

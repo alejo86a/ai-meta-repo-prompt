@@ -1,10 +1,21 @@
 # Onboarding Prompt — Soft Landing of a New Way of Working
 
-> **How to use this file**: copy everything below the `--- BEGIN PROMPT ---` line and paste it as the first message to a Claude Code (or equivalent) agent that has been opened at the root of the meta-repo. The agent will read it and walk the team through a phased rollout. The prompt assumes the agent has shell access, file edit permission, and git permission, but no issue-tracker integration. It explicitly does **not** rely on GitHub Issues.
+> **How to use this file**: copy everything below the `--- BEGIN PROMPT ---` line and paste it as the first message to a Claude Code (or equivalent) agent that has been opened in the **parent folder that holds the repositories you want it to study**. The agent will read it and walk the team through a phased rollout that ends in a generated `meta-repo/`. The prompt assumes the agent has shell access, file edit permission, and git permission, but no issue-tracker integration. It explicitly does **not** rely on GitHub Issues.
+>
+> **Short trigger (what you actually paste):** you don't need to paste the whole thing every time — point the agent at this file, e.g. *"Lee y ejecuta `onboarding-prompt.md` sobre los repositorios de esta carpeta."* All the heavy logic lives here.
+>
+> **First execution:** on the first run the agent also *reads* every repository in the working folder and — **only after asking for consent** — mines the last 20 pull requests of each repo via `gh` to learn the team's real review habits, fetches official language rules from the web, and folds both into the Phase 0 report as the project's merged best practices (see Phase 0, step 5). PR mining is **GitHub-only and best-effort**: if a repo isn't on GitHub, or `gh`/consent isn't available, that repo is skipped and only its code plus official rules are used. It additionally needs `gh` and web access; installing `gh` and storing a token are consent-gated prerequisites that touch only local, git-ignored credentials — never the repo's tracked files.
+>
+> **What this produces — the meta-repo contract (read this):**
+> 1. **Business-agnostic creator, business-tied output.** This creator ships generic. Clone it into a parent folder that holds N repositories (2, 5, 10 — however many) and it studies *each* of them, whatever the count.
+> 2. **Output = a new `meta-repo/` folder** whose entry point is `AGENTS.md`, the cross-repo context hub. The studied repos are never modified.
+> 3. **Grounds Copilot / terminal agents.** Point your tool at `meta-repo/AGENTS.md` and questions and edits across the whole repo set become faster and more accurate, because the topology + conventions are pre-loaded as context.
+> 4. **Deletable after the first run.** Once `meta-repo/` is generated and approved, this creator file can be removed from the parent folder so it isn't mistaken for one more project repo.
+> 5. **Self-improving.** While working on any later task, an agent that spots drift or a better convention proposes a small, approved update back to the meta-repo (see "Self-improvement").
 
 The prompt is opinionated about three things:
 
-1. **Augment, never replace.** The team already has a `rules.md` they trust. The new way of working layers on top of it; nothing already documented gets deleted on day one.
+1. **Augment, never replace.** If the team already has a `rules.md` they trust, the new way of working layers on top of it; nothing already documented gets deleted on day one.
 2. **Phased rollout.** Six small phases, each with one concrete deliverable. Each phase ends with an explicit user checkpoint. No phase is started without approval.
 3. **Skill-first, agent-second.** Skills (slash commands) are introduced before specialized sub-agents because they show value with zero culture change. Sub-agents come later when the team is ready.
 
@@ -16,7 +27,7 @@ The companion skills live in `export-skills/skills/` (`commit-and-push.md`, `com
 
 # Mission
 
-You are helping a team adopt a new agentic way of working in a large, technically complicated codebase. The team already has a single `rules.md` that they use to brief the AI when writing tickets. They want to evolve from "one big rules.md + ad-hoc prompts" into a structured workflow with reusable skills and predictable agent behavior — **without disrupting what already works**.
+You are building a **meta-repo** for a team that works across **one or more repositories** which together serve a business domain. Some teams already have a `rules.md` they brief the AI with; others have nothing written down. Your job is to study the repositories, distill how the team actually works, and produce a single, business-tied `meta-repo/` whose `AGENTS.md` makes every future agent — terminal LLM or Copilot — faster and more accurate across the whole set, **without disrupting what already works**.
 
 Treat this as a **soft landing**. Every change is additive, every phase ends with a checkpoint, and you never delete content the team relies on without their explicit approval. If you're unsure, ask. Cost of asking is low; cost of overwriting trusted documentation is high.
 
@@ -69,9 +80,42 @@ Do these in parallel where possible:
    - **Pain points first**: "Of these — onboarding, picking a task, planning before coding, code review, commit/PR ergonomics, local stack reliability, demo/visibility — which two would help the team the most right now?"
    - **Stakeholders**: "Who needs to approve changes to the way of working? Just you, or do I need to wait for someone else to weigh in at certain checkpoints?"
 
-5. **Produce a Phase 0 report.** A single markdown message back to the user with:
+5. **First-execution intelligence — analyze the repos, mine their PRs, fetch official rules.** Do this once, on the first run; it is what turns generic advice into *project-specific* best practices for the meta-repo. **It stays within the read-only spirit of Phase 0: it *reads* code and PRs and produces a *report*, not repo changes. The only writes are local, git-ignored credentials, gated behind explicit user consent (step B).**
+
+   **A. Analyze each repository in the folder (read-only).** Detect every git repository under the working folder (each directory containing `.git`). For each one, read the remote host with `git remote get-url origin`, detect the stack and dominant languages from manifests (`package.json`, `pom.xml`, `build.gradle`, `pyproject.toml`, `requirements.txt`, `go.mod`, `Cargo.toml`) and source-file extensions, and read any conventions it already ships (`rules.md`, `CONTRIBUTING.md`, `.eslintrc*`, `checkstyle*`, `ruff.toml`, CI workflows). Build a table: `repo | host | languages | existing conventions`.
+
+   **B. Mine the last 20 PRs of each repo — GitHub-only, best-effort, consent-gated.** This is the only part that may need setup, so **ask first**: *"To mine review history I can install the GitHub CLI and use a fine-grained token; repos not on GitHub will be skipped. OK to proceed?"* Only if the user agrees, install and authenticate `gh` (skip whichever step is already satisfied):
+
+   ```bash
+   which gh || brew install gh
+   gh auth status || {
+     mkdir -p .env
+     printf 'GH_TOKEN=INSERTA_AQUI_TU_TOKEN\n' > .env/github.env   # replace the placeholder first
+     chmod 600 .env/github.env
+     set -a; source .env/github.env; set +a
+     printf '%s' "$GH_TOKEN" | gh auth login --with-token
+   }
+   gh auth status
+   ```
+
+   The fine-grained token needs, on the selected repos: **Pull requests: Read**, **Contents: Read**, **Metadata: Read**. The token file is optional — a one-shot `gh auth login` is enough; if you keep it, ensure `.env/` is git-ignored and `chmod 600`. Then, **only for repos whose host is GitHub**, pull the recent review feedback (all read-only calls):
+
+   ```bash
+   gh pr list --repo <owner>/<repo> --state merged --limit 20 --json number,title,url
+   gh pr view <number> --repo <owner>/<repo> --json comments,reviews,files
+   gh api repos/<owner>/<repo>/pulls/<number>/comments --jq '.[].body'   # inline review-thread comments
+   ```
+
+   **Combine all three sources** (review bodies, PR-level comments, and inline thread comments) and dedupe. Inline comments alone are often sparse — many PRs merge with none — so a single source under-samples the signal; pulling all three typically multiplies it several-fold. Filter out bot output (dependabot, pre-commit.ci, codecov) and bare links before clustering. Cluster the **most repeated review comments** per language and per repo (naming/style, tests, architecture boundaries, error handling/logging, performance/security). If a repo has fewer than 20 merged PRs, use all available and note the sample size. If a repo isn't on GitHub, or `gh`/consent is unavailable, **skip it** and mark that its practices come from code + official rules only (lower confidence). These recurring comments are the team's *real*, enforced best practices.
+
+   > **Resilience (don't get fooled by silence):** surface API errors instead of suppressing them (avoid piping stderr to `/dev/null`). An empty result caused by an auth or secondary-rate-limit failure must **not** be misread as "this repo has no review culture." If you fire many calls in a burst you may hit GitHub's secondary rate limit — pace requests, check `gh api rate_limit`, and retry before concluding a repo is empty.
+
+   **C. Fetch official language rules and merge.** For each detected language/runtime, fetch concise rules from official/authoritative sources — e.g. Node.js → `nodejs.org`, JavaScript → `developer.mozilla.org` / `eslint.org`, TypeScript → `typescriptlang.org`, Java → `docs.oracle.com`, Python → `docs.python.org` / `peps.python.org`, Go → `go.dev`, Kotlin → `kotlinlang.org`. **Merge** with this precedence: (1) practices repeatedly enforced in PR reviews or CI, (2) official language rules, (3) generic fallback. When a local practice conflicts with the official docs, keep the local one **if** it is CI-enforced or repeatedly required in reviews, and annotate why. Do **not** fabricate PR comments or web rules; cite sources. This merged result is the best-practices source that later phases feed into `AGENTS.md` and `docs/coding-standards/` — no repo files are written during Phase 0.
+
+6. **Produce a Phase 0 report.** A single markdown message back to the user with:
    - A 5-bullet summary of what `rules.md` already covers, organized as: Team / Architecture / Code style / Workflow / Anti-patterns.
    - A 5-bullet summary of what `rules.md` does **not** cover but the codebase clearly needs (gaps).
+   - The **merged best practices** per language — top recurring PR comments (with repo + sample size) fused with the official rules, sources cited, and any local-vs-official conflicts flagged.
    - The answers to the discovery questions, echoed back so the user can correct anything you misheard.
    - The two pain points the user picked, restated, with one paragraph each on how the new way of working addresses them.
 
@@ -83,31 +127,35 @@ Goal: a written, approved rollout plan. Still no code, still no file changes.
 
 Produce a markdown proposal with:
 
-1. **The target structure** — what the agent-facing documentation will look like at the end of Phase 5. Show it as a tree:
+1. **The target structure** — the creator produces a **new, self-contained `meta-repo/` folder** that sits *beside* the repositories it studied (it never rewrites them). Show it as a tree:
 
    ```
-   <repo-root>/
-   ├── rules.md                     ← stays. May get a small "see also" footer in Phase 2.
-   ├── AGENTS.md                    ← NEW. Single bootstrap file every agent reads first. ~150 lines.
-   ├── docs/
-   │   ├── architecture/            ← from rules.md "architecture" sections, only if Phase 2 split is approved
-   │   ├── decisions/               ← ADRs going forward (one .md per decision, dated)
-   │   ├── methodology/             ← how the team works
-   │   └── coding-standards/        ← language-specific rules from rules.md
-   ├── .claude/
-   │   ├── commands/                ← slash commands (skills)
-   │   │   ├── dev-up.md            ← Phase 3
-   │   │   ├── start-task.md        ← Phase 4
-   │   │   ├── complete-task.md     ← Phase 4
-   │   │   └── commit-and-push.md   ← Phase 4
-   │   └── agents/                  ← specialized sub-agents (Phase 5)
+   <parent-folder>/                 ← where you cloned this creator + the repos it studies
+   ├── repo-a/                      ← studied, never modified
+   ├── repo-b/                      ← studied, never modified
+   ├── repo-c/                      ← studied, never modified
+   ├── onboarding-prompt.md         ← THIS creator. Deletable after the first successful run (see note).
+   └── meta-repo/                   ← NEW. The business-tied output. Self-contained.
+       ├── AGENTS.md                ← cross-repo context hub every agent/Copilot reads first
+       ├── research/
+       │   ├── review-intelligence.md   ← top recurring PR comments per repo/language
+       │   ├── official-rules.md        ← cited rules from official docs per language
+       │   └── best-practices-merged.md ← the merged, business-specific standard
+       ├── docs/
+       │   ├── decisions/           ← ADRs going forward (one .md per decision, dated)
+       │   └── coding-standards/    ← per-language standards (merged)
+       └── .claude/
+           ├── commands/            ← slash commands (skills) — Phases 3–4
+           └── agents/              ← specialized sub-agents — Phase 5
    ```
 
-   Adjust paths to whatever the receiving project's agent runtime expects.
+   If the target is a single mono-repo instead of sibling repos, `meta-repo/` may instead live at that repo's root as `AGENTS.md` + `docs/` — ask the user which they prefer. Adjust `.claude/` to whatever the runtime expects (e.g. `.github/copilot-instructions.md` for Copilot).
+
+   > **Deletable creator:** once `meta-repo/` is generated and approved, `onboarding-prompt.md` (this creator) can be deleted from the parent folder so it isn't mistaken for one more project repo. The generated `meta-repo/` stands on its own.
 
 2. **The phase plan**, with one paragraph per phase explaining what the team will see and what they have to do:
 
-   - **Phase 2 — `AGENTS.md` bootstrap file.** Pure addition. Pulls a high-level summary from `rules.md` plus the architectural invariant. ~30 minutes of review for the user. No behavior change.
+   - **Phase 2 — `AGENTS.md` cross-repo context hub.** Pure addition inside `meta-repo/`. Maps every studied repo plus the merged best practices and the architectural invariant. This is the file Copilot/terminal agents load for context. No change to the studied repos.
    - **Phase 3 — `/dev-up` skill.** The first slash command. Wraps "boot the project locally" into one command, with prerequisite checks and per-service health probes. Pure addition; the existing `make dev`, `docker compose up`, etc. keep working. This is the trust-building phase.
    - **Phase 4 — Workflow skills (`/start-task`, `/commit-and-push`, `/complete-task`).** Adapted from `export-skills/skills/*.md` with the receiving project's tracker, branch convention, commit format, and DoD. The skills are opt-in; engineers who don't invoke them are unaffected.
    - **Phase 5 — Specialized sub-agents.** Introduce `code-reviewer` first (lowest risk, highest signal). Then a `test-engineer` agent. Then domain-specific agents based on the codebase. Each one is a single `.md` file under `.claude/agents/`.
@@ -130,33 +178,29 @@ Produce a markdown proposal with:
 
 End with: **"Approve this rollout plan and I'll start Phase 2. You can pause or roll back at any phase boundary."**
 
-# Phase 2 — `AGENTS.md` bootstrap file
+# Phase 2 — `AGENTS.md` cross-repo context hub
 
-Goal: one new file. No edits to anything else.
+Goal: create `meta-repo/AGENTS.md`. No edits to the studied repos.
 
-The file is the single thing every agent (or human onboarding to the codebase) reads first. It's a curated index, not a re-statement of `rules.md`. Target ~150 lines.
+`AGENTS.md` is the single file every agent — terminal LLM, Copilot, or a human — reads first to work across the whole set of repositories accurately. Loading it as context is what makes questions and code changes over these repos faster and more correct, because the model no longer has to rediscover the topology, the stack, or the team's conventions each time. Target ~150–200 lines.
 
 Required sections:
 
-1. **What this project is** (3 sentences from Phase 0).
-2. **The team** (one line per role; pull from `rules.md` if it's there).
-3. **The one architectural invariant** (the sentence the user gave you in Phase 0). Tag it as **"if you remember nothing else, remember this"**.
-4. **Repo layout** — a tree with one-line descriptions of each top-level dir.
-5. **How to run it locally** — for now, the existing `make dev` / whatever-they-use. Phase 3 will replace this with `/dev-up`.
-6. **How we work** — one paragraph each on:
-   - Branching (from Phase 0 answer).
-   - Commit format (from Phase 0 answer + git log evidence).
-   - PR review (from Phase 0 answer).
-   - Definition of Done (from Phase 0 answer).
-7. **Where things are documented** — link to `rules.md` and any other existing doc the team uses.
-8. **What changed recently** — a "this file was last updated on YYYY-MM-DD" footer plus a 1-line changelog.
+1. **What this set of repositories is** — the business domain they serve together (3 sentences from Phase 0).
+2. **Repo map** — one row per repository: name, path, primary languages, one-line purpose, and how it relates to the others (who calls whom, shared contracts).
+3. **The architectural invariant(s)** — the sentence(s) from Phase 0. Tag as **"if you remember nothing else, remember this"**.
+4. **Merged best practices** — a concise, per-language digest that links to `research/best-practices-merged.md`. This is the business-tied standard learned from the repos' own PRs + official rules.
+5. **How to run each repo locally** — the real command per repo (Phase 3 can wrap this in `/dev-up`).
+6. **How we work** — branching, commit format, PR review, Definition of Done (from Phase 0 + git evidence).
+7. **Using this hub with Copilot / terminal agents** — tell the user to point their tool at `AGENTS.md` (e.g. copy or symlink it to `.github/copilot-instructions.md`, or open it at the start of a session) so answers and edits are grounded in this context.
+8. **Self-improvement** — a short contract (see the Self-improvement section) telling any agent that if it discovers drift or a better convention while working, it must propose an update to this hub.
+9. **Changelog footer** — "last updated YYYY-MM-DD" + a 1-line entry.
 
 Do NOT include:
-- Long code-style rules (those stay in `rules.md` for now).
-- Skills/sub-agents (those land in phase 3+).
-- Anything aspirational. Only what is true today.
+- Full code-style rules inline (link to `research/` instead).
+- Anything aspirational. Only what is true across the repos today.
 
-After writing the file, show the diff and ask: **"Review and approve. After approval I'll move to Phase 3 (`/dev-up` skill)."**
+After writing the file, show it and ask: **"Review and approve. After approval I'll move to Phase 3 (`/dev-up` skill)."**
 
 # Phase 3 — `/dev-up` skill
 
@@ -312,6 +356,17 @@ After whichever phase the team stops at, write a short handover note (~30 lines)
 
 Save it as `docs/methodology/agentic-way-of-working.md` (or wherever the team's docs live).
 
+# Self-improvement — keep the meta-repo alive
+
+The meta-repo is not a write-once artifact. Any skill or sub-agent, no matter what task it is running, follows this loop whenever it notices something that would make the meta-repo more correct:
+
+1. **Notice** — e.g. `AGENTS.md` describes a flow the code no longer matches, a new convention appears repeatedly in fresh PRs, a repo was added or removed, or a documented command fails.
+2. **Propose, don't overwrite** — draft a small diff to the relevant meta-repo file (`AGENTS.md`, `research/best-practices-merged.md`, or a new ADR under `docs/decisions/`) and show it as a checkpoint.
+3. **Get approval** — the user accepts, edits, or rejects. Only approved diffs are written.
+4. **Record** — bump the `AGENTS.md` changelog footer with a one-line entry so the improvement is traceable.
+
+This keeps the meta-repo a living, business-tied source of truth without letting an agent silently rewrite it. Bias to one small, reversible improvement at a time.
+
 # Guardrails — the whole way through
 
 - ✅ Read before write. Always.
@@ -324,11 +379,13 @@ Save it as `docs/methodology/agentic-way-of-working.md` (or wherever the team's 
 - ❌ Don't reorganize directories without showing a complete diff and getting approval.
 - ❌ Don't introduce more than one new tool/skill/agent at a time.
 - ❌ Don't claim adoption metrics ("the team will save X hours"). You don't know yet.
-- ❌ Don't cargo-cult patterns from another project. Every adaptation must be justifiable from the receiving project's `rules.md` and codebase.
+- ❌ Don't cargo-cult patterns from another project. Every adaptation must be justifiable from the repositories' own code, PRs, and (if present) `rules.md`.
+- ✅ Keep the studied repositories read-only; all generated files go into `meta-repo/`.
+- ✅ After the first successful run, offer to delete this creator from the parent folder so it isn't mistaken for a project repo.
 
 # Final reminder
 
-This is a soft landing in a large, technically complicated codebase. The team has a `rules.md` they trust. Your job is to extend, not replace; to enable, not impose. Move slowly, prove value at each phase, and earn the right to the next one.
+This is a soft landing across one or more repositories that serve a business domain. Your job is to study them, distill how the team already works, and produce a single business-tied meta-repo that makes every future agent faster and more accurate — to extend, not replace; to enable, not impose. Move slowly, prove value at each phase, and earn the right to the next one.
 
 If you're ever unsure: **stop and ask.**
 
