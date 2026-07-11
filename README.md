@@ -20,6 +20,26 @@ What it does on the first run (all logic lives in `onboarding-prompt.md`, not in
 
 The studied repositories are never modified.
 
+## Verifying changes to this repo (pre-commit)
+
+Every change to `ai-meta-repo-prompt` must survive the same demanding battery used to design it. This is enforced with a git hook plus an agent prompt.
+
+Install the hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+On every `git commit` the hook (`.githooks/pre-commit`) runs **Gate 0** — fast, deterministic, offline checks (required prompt anchors, `meta-repo/` output tree, `.env/` is git-ignored, no token literals staged, no broken `skills/*.md` references) and blocks the commit if any fail.
+
+For the deep gates (**adversarial diff review + real sandbox end-to-end**: clone 3 real repos, run steps 5A/5B/5C, generate a throwaway `meta-repo/`, tear it down), run the agent prompt `skills/verify-meta-repo.md` — paste it to your coding agent at the repo root. Once it prints `VERIFICATION PASSED`, acknowledge and commit:
+
+```bash
+VERIFY_AGENT_DONE=1 git commit -m "…"
+```
+
+Emergency bypass (discouraged): `git commit --no-verify`.
+
 ## What's in the box
 
 | Skill | Purpose |
@@ -29,6 +49,7 @@ The studied repositories are never modified.
 | `skills/commit-and-push.md` | Validate diff vs. branch context, generate a `[TASK-XXX]` commit, push, and open a PR with linked acceptance criteria |
 | `skills/dev-up.md` | Bring up the local Docker Compose stack with prerequisite checks and per-service health probes |
 | `skills/generate-demo-frontend.md` | Generate a demo SPA that animates a microservice diagram while a real backend flow runs (chat + SSE) |
+| `skills/verify-meta-repo.md` | Pre-commit agent battery — adversarial diff review + real sandbox end-to-end test, run on every change to this repo |
 
 ## How to use these in a different project
 

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+#
+# Pre-commit gate for ai-meta-repo-prompt.
+#
+# It runs the deterministic Gate 0 checks itself (fast, no network) and BLOCKS
+# the commit if any fail. It then requires the deep, agent-driven battery
+# described in skills/verify-meta-repo.md (adversarial review + sandbox e2e).
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass in a genuine emergency (discouraged):
+#   git commit --no-verify
+#   # or, to skip only the agent gate:
+#   VERIFY_AGENT_DONE=1 git commit
+#
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+fail=0
+say()  { printf '%b\n' "$*"; }
+ok()   { printf '  \033[32m[ok]\033[0m %s\n' "$*"; }
+bad()  { printf '  \033[31m[XX]\033[0m %s\n' "$*"; fail=1; }
+
+say "─────────────────────────────────────────────"
+say " pre-commit · ai-meta-repo-prompt · Gate 0"
+say "─────────────────────────────────────────────"
+
+PROMPT="onboarding-prompt.md"
+
+# 1) Required anchors in the prompt.
+if [[ -f "$PROMPT" ]]; then
+  need_anchor() {
+    if grep -qF -- "$1" "$PROMPT"; then ok "anchor present: $2"; else bad "missing anchor: $2 ($1)"; fi
+  }
+  need_anchor "--- BEGIN PROMPT ---"        "BEGIN PROMPT marker"
+  need_anchor "--- END PROMPT ---"          "END PROMPT marker"
+  need_anchor "# Phase 0"                    "Phase 0 section"
+  need_anchor "First-execution intelligence" "first-execution intelligence step"
+  # 2) Meta-repo output tree references.
+  for token in "meta-repo/" "AGENTS.md" "research/" "docs/"; do
+    if grep -qF "$token" "$PROMPT"; then ok "output tree references: $token"; else bad "output tree missing: $token"; fi
+  done
+else
+  bad "$PROMPT not found"
+fi
+
+# 3) .gitignore must protect .env/ and no token literals may be staged.
+if grep -qE '(^|/)\.env/?' .gitignore 2>/dev/null; then ok ".gitignore ignores .env/"; else bad ".gitignore does not ignore .env/"; fi
+
+if git diff --cached --name-only -z | xargs -0 -I{} sh -c 'git show ":{}" 2>/dev/null' \
+     | grep -qE 'github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}'; then
+  bad "a token literal (github_pat_/ghp_) is present in staged content — remove it"
+else
+  ok "no token literals in staged content"
+fi
+
+# 4) Every skills/<name>.md referenced in docs actually exists.
+missing_ref=0
+for f in README.md "$PROMPT"; do
+  [[ -f "$f" ]] || continue
+  while IFS= read -r ref; do
+    [[ -f "$ref" ]] || { bad "referenced skill file missing: $ref (in $f)"; missing_ref=1; }
+  done < <(grep -oE '(^|[^-/[:alnum:]])skills/[a-zA-Z0-9._-]+\.md' "$f" | sed -E 's#^[^s]*##' | sort -u)
+done
+[[ $missing_ref -eq 0 ]] && ok "all referenced skills/*.md exist"
+
+if [[ $fail -ne 0 ]]; then
+  say ""
+  say "\033[31mGate 0 FAILED — commit blocked.\033[0m Fix the items above and re-stage."
+  exit 1
+fi
+
+say ""
+ok "Gate 0 passed."
+
+# ── Deep agent battery (Gates 1–6) ────────────────────────────────────────────
+# These require an agent (adversarial review + real sandbox e2e). The hook can't
+# run an LLM, so it enforces an explicit acknowledgement that the agent battery
+# in skills/verify-meta-repo.md was run and PASSED.
+if [[ "${VERIFY_AGENT_DONE:-}" == "1" ]]; then
+  ok "agent battery acknowledged (VERIFY_AGENT_DONE=1)."
+  say "─────────────────────────────────────────────"
+  exit 0
+fi
+
+say ""
+say "\033[33mACTION REQUIRED — deep verification (Gates 1–6)\033[0m"
+say "Run the agent prompt below, and only commit once it reports PASS:"
+say ""
+say "    skills/verify-meta-repo.md"
+say ""
+say "Paste that file to your coding agent (Copilot/Claude/etc.) at the repo root."
+say "When it prints 'VERIFICATION PASSED', re-run your commit as:"
+say ""
+say "    VERIFY_AGENT_DONE=1 git commit ..."
+say ""
+say "\033[31mCommit blocked until the agent battery is acknowledged.\033[0m"
+exit 1
