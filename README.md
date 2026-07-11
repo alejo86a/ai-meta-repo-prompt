@@ -1,5 +1,7 @@
 # export-skills
 
+[![verify](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml/badge.svg)](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml)
+
 Portable Claude Code skills extracted from `the-hybrids-planning-project`, ready to drop into any other project. Project-specific names (YugaStore, MCP, Unleash, YugabyteDB) have been replaced with `<<PLACEHOLDERS>>` that the receiving agent must fill in before the skills run.
 
 ## Just cloned this repo? Do this first
