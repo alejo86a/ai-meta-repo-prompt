@@ -73,6 +73,25 @@ for f in README.md "$PROMPT"; do
 done
 [[ $missing_ref -eq 0 ]] && ok "all referenced skills/*.md exist"
 
+# 5) Translation sync: README.md and README.es.md should change together.
+if [[ "${GATE0_ONLY:-}" == "1" ]]; then
+  # CI: compare against the previous commit.
+  changed="$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)"
+else
+  # Local: look at what's staged.
+  changed="$(git diff --cached --name-only 2>/dev/null || true)"
+fi
+en_changed=0; es_changed=0
+grep -qx 'README.md'    <<< "$changed" && en_changed=1
+grep -qx 'README.es.md' <<< "$changed" && es_changed=1
+if [[ -f README.es.md && $en_changed -eq 1 && $es_changed -eq 0 ]]; then
+  bad "README.md changed but README.es.md did not — keep the Spanish translation in sync"
+elif [[ -f README.es.md && $es_changed -eq 1 && $en_changed -eq 0 ]]; then
+  bad "README.es.md changed but README.md did not — keep the English source in sync"
+else
+  ok "README translations in sync"
+fi
+
 if [[ $fail -ne 0 ]]; then
   say ""
   say "\033[31mGate 0 FAILED — commit blocked.\033[0m Fix the items above and re-stage."

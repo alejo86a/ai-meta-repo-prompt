@@ -79,7 +79,7 @@ Install the hook once per clone:
 git config core.hooksPath .githooks
 ```
 
-On every `git commit` the hook (`.githooks/pre-commit`) runs **Gate 0** — fast, deterministic, offline checks (required prompt anchors, `meta-repo/` output tree, `.env/` is git-ignored, no token literals staged, no broken `skills/*.md` references) and blocks the commit if any fail.
+On every `git commit` the hook (`.githooks/pre-commit`) runs **Gate 0** — fast, deterministic, offline checks (required prompt anchors, `meta-repo/` output tree, `.env/` is git-ignored, no token literals staged, no broken `skills/*.md` references, and README translation sync between `README.md` and `README.es.md`) and blocks the commit if any fail.
 
 For the deep gates (**adversarial diff review + real sandbox end-to-end**: clone 3 real repos, run steps 5A/5B/5C, generate a throwaway `meta-repo/`, tear it down), run the agent prompt `skills/verify-meta-repo.md` — paste it to your coding agent at the repo root. Once it prints `VERIFICATION PASSED`, acknowledge and commit:
 

@@ -26,6 +26,7 @@ Run the same checks as the hook and confirm they pass:
 2. The meta-repo output tree references `meta-repo/` with `AGENTS.md`, `research/`, and `docs/`.
 3. `.gitignore` ignores `.env/` (token safety). No token literal (`github_pat_`, `ghp_`) appears in any tracked file.
 4. `README.md` and `onboarding-prompt.md` have no broken internal skill references (every `skills/<name>.md` mentioned exists).
+5. Translation sync: if `README.md` changed, `README.es.md` changed too (and vice-versa) — the two language versions must not drift.
 
 ### Gate 1 — Adversarial review of the diff
 

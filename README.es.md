@@ -80,7 +80,7 @@ Instala el hook una vez por clon:
 git config core.hooksPath .githooks
 ```
 
-En cada `git commit` el hook (`.githooks/pre-commit`) corre el **Gate 0** — chequeos rápidos, deterministas y offline (anclas requeridas del prompt, árbol de salida `meta-repo/`, `.env/` git-ignored, sin literales de token en staging, sin referencias rotas a `skills/*.md`) y bloquea el commit si alguno falla.
+En cada `git commit` el hook (`.githooks/pre-commit`) corre el **Gate 0** — chequeos rápidos, deterministas y offline (anclas requeridas del prompt, árbol de salida `meta-repo/`, `.env/` git-ignored, sin literales de token en staging, sin referencias rotas a `skills/*.md`, y sincronización de traducción entre `README.md` y `README.es.md`) y bloquea el commit si alguno falla.
 
 Para los gates profundos (**revisión adversarial del diff + sandbox real end-to-end**: clonar 3 repos reales, correr los pasos 5A/5B/5C, generar un `meta-repo/` desechable y hacer teardown), corre el prompt de agente `skills/verify-meta-repo.md` — pégalo a tu agente de código en la raíz del repo. Cuando imprima `VERIFICATION PASSED`, reconoce y haz commit:
 
