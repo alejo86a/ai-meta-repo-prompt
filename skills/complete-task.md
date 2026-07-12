@@ -18,7 +18,7 @@ Run the Definition of Done checklist, update the issue tracker to `status: revie
 > | `<<ARCH_INVARIANT>>` | One sentence describing the project's architectural rule that must hold | e.g. "service A never accesses DB directly — must go through the API gateway" |
 > | `<<TEST_CMD>>` | Test command | `npm test`, `pytest`, `go test ./...` |
 > | `<<LINT_CMD>>` | Lint/typecheck command | `npm run lint`, `tsc --noEmit`, `ruff check` |
-> | `<<DOCS_FILE>>` | Project context file the agent must update on pattern changes | `CLAUDE.md`, `README.md`, `docs/architecture.md` |
+> | `<<DOCS_FILE>>` | Project context file the agent must update on pattern changes | `AGENTS.md`, `README.md`, `docs/architecture.md` |
 
 ## Input
 

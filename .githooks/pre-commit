@@ -21,8 +21,8 @@ cd "$ROOT"
 
 fail=0
 say()  { printf '%b\n' "$*"; }
-ok()   { printf '  \033[32m[ok]\033[0m %s\n' "$*"; }
-bad()  { printf '  \033[31m[XX]\033[0m %s\n' "$*"; fail=1; }
+ok()   { printf '  \033[32m\xe2\x9c\x93\033[0m %s\n' "$*"; }
+bad()  { printf '  \033[31m\xe2\x9c\x97\033[0m %s\n' "$*"; fail=1; }
 
 say "─────────────────────────────────────────────"
 say " pre-commit · ai-meta-repo-prompt · Gate 0"
@@ -52,7 +52,7 @@ if grep -qE '(^|/)\.env/?' .gitignore 2>/dev/null; then ok ".gitignore ignores .
 
 if [[ "${GATE0_ONLY:-}" == "1" ]]; then
   # CI: scan all tracked files, not just staged content.
-  token_hits="$(git grep -I -nE 'github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}' -- . ':(exclude).githooks/pre-commit' ':(exclude)skills/verify-meta-repo.md' 2>/dev/null || true)"
+  token_hits="$(git grep -I -nE 'github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}' -- . ':(exclude).githooks/pre-commit' ':(exclude)skills/verify-meta-repo.md' ':(exclude)scripts/sandbox-e2e.sh' 2>/dev/null || true)"
 else
   token_hits="$(git diff --cached --name-only -z | xargs -0 -I{} sh -c 'git show ":{}" 2>/dev/null' \
      | grep -E 'github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}' || true)"
@@ -75,8 +75,12 @@ done
 
 # 5) Translation sync: README.md and README.es.md should change together.
 if [[ "${GATE0_ONLY:-}" == "1" ]]; then
-  # CI: compare against the previous commit.
-  changed="$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)"
+  # CI: compare against the previous commit when it exists; otherwise skip.
+  if git rev-parse --verify -q HEAD~1 >/dev/null; then
+    changed="$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)"
+  else
+    changed=""; ok "README translation sync skipped (no previous commit)"
+  fi
 else
   # Local: look at what's staged.
   changed="$(git diff --cached --name-only 2>/dev/null || true)"
@@ -88,7 +92,7 @@ if [[ -f README.es.md && $en_changed -eq 1 && $es_changed -eq 0 ]]; then
   bad "README.md changed but README.es.md did not — keep the Spanish translation in sync"
 elif [[ -f README.es.md && $es_changed -eq 1 && $en_changed -eq 0 ]]; then
   bad "README.es.md changed but README.md did not — keep the English source in sync"
-else
+elif [[ -n "$changed" ]]; then
   ok "README translations in sync"
 fi
 

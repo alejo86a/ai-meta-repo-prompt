@@ -18,7 +18,7 @@ Pick a task from the issue tracker, validate it's ready to start, create the fea
 > | `<<STATUS_IN_PROGRESS>>` | Label/state meaning "actively working" | `status: in-progress` |
 > | `<<DEFAULT_BRANCH>>` | Repo default branch | `main`, `master` |
 > | `<<WIP_LIMIT>>` | Max simultaneous in-progress tasks | `3` |
-> | `<<DOCS_FILE>>` | Project context file the agent should read | `CLAUDE.md`, `docs/architecture.md` |
+> | `<<DOCS_FILE>>` | Project context file the agent should read | `AGENTS.md`, `docs/architecture.md` |
 > | `<<PHASE_HINTS>>` | Optional table mapping phase labels → reading list & recommended agent | (see step 10) |
 
 ## Input

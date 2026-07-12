@@ -1,10 +1,12 @@
-# export-skills
+# ai-meta-repo-prompt
 
 [![verify](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml/badge.svg)](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml)
 
 📖 **Read this in:** English (this file) · [Español](README.es.md)
 
-Portable Claude Code skills extracted from `the-hybrids-planning-project`, ready to drop into any other project. Project-specific names (YugaStore, MCP, Unleash, YugabyteDB) have been replaced with `<<PLACEHOLDERS>>` that the receiving agent must fill in before the skills run.
+A **business-agnostic, model-agnostic meta-repo creator**. Clone it next to the repositories you want to map, point any coding agent at it, and it studies every repo, learns the team's real review habits, merges them with official language rules, and generates a standalone `meta-repo/` whose `AGENTS.md` becomes a cross-repo context hub for your whole project set.
+
+It also ships the portable skills bundle (`skills/`) it uses — reusable slash commands you can drop into any project. Project-specific names from the source project are replaced with `<<PLACEHOLDERS>>` the receiving agent fills in.
 
 ## Just cloned this repo? Do this first
 
@@ -43,7 +45,17 @@ Lee y ejecuta onboarding-prompt.md sobre todos los repositorios de esta carpeta 
 
 Once you've approved the generated `meta-repo/`:
 
-1. **Retire the creator.** Delete the cloned `ai-meta-repo-prompt/` folder so it isn't mistaken for one more project repo. From here on you work **from the meta-repo**, whose `AGENTS.md` (or `CLAUDE.md`) is your cross-repo context hub.
+1. **Retire the creator.** Delete the cloned `ai-meta-repo-prompt/` folder so it isn't mistaken for one more project repo. From here on you work **from the meta-repo**, whose `AGENTS.md` is your cross-repo context hub.
+
+   `AGENTS.md` is the **model-agnostic** canonical name (the emerging cross-tool convention). If your agent reads a differently-named file, point it there — keep `AGENTS.md` as the source of truth and mirror/symlink as needed:
+
+   | Your agent / CLI | Where the context hub is read from |
+   |---|---|
+   | Generic / `AGENTS.md`-aware | `AGENTS.md` (canonical) |
+   | GitHub Copilot | `.github/copilot-instructions.md` |
+   | Cursor | `.cursor/rules/` (`*.mdc`) |
+   | Claude Code | `CLAUDE.md` |
+   | Others | whatever that runtime bootstraps first — mirror `AGENTS.md` into it |
 
 2. **Start a fresh CLI session for each task.** Open a **new** agent session that loads the meta-repo's `AGENTS.md` first. Do this every time you switch tasks — a long-lived session accumulates stale context and its answers degrade. Fresh session = clean, accurate context.
 
@@ -87,6 +99,12 @@ For the deep gates (**adversarial diff review + real sandbox end-to-end**: clone
 VERIFY_AGENT_DONE=1 git commit -m "…"
 ```
 
+For the mechanical, repeatable part of that battery you can run the deterministic smoke test directly (clones 3 real repos, runs 5A detection + 5B PR mining, tears down):
+
+```bash
+scripts/sandbox-e2e.sh          # or: PR_LIMIT=5 scripts/sandbox-e2e.sh
+```
+
 Emergency bypass (discouraged): `git commit --no-verify`.
 
 **Server-side net:** `.github/workflows/verify.yml` re-runs Gate 0 on every push and pull request (`GATE0_ONLY=1 bash .githooks/pre-commit`), so structural regressions are caught even if someone commits with `--no-verify`. On CI the token scan widens to all tracked files, not just staged content.
@@ -126,7 +144,7 @@ Every skill starts with an "Adapter note" table. Search each file for `<<` and r
 | `<<COMPOSE_FILE>>` | Path to your `docker-compose.yml` |
 | `<<SERVICES>>` | The service health-check table |
 | `<<PRIMARY_URL>>` | Whatever URL the user should open at the end of `/dev-up` |
-| `<<DOCS_FILE>>` | The single file that bootstraps a new agent (e.g. `CLAUDE.md`, `AGENTS.md`) |
+| `<<DOCS_FILE>>` | The single file that bootstraps a new agent (model-agnostic canonical: `AGENTS.md`) |
 
 If the receiving project uses Jira/Linear instead of GitHub Issues, replace every `gh issue ...` block with the equivalent CLI for the chosen tracker. The structure of the skill (when to update status, what fields to read) stays the same.
 

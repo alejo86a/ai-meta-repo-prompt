@@ -1,10 +1,12 @@
-# export-skills
+# ai-meta-repo-prompt
 
 [![verify](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml/badge.svg)](https://github.com/alejo86a/ai-meta-repo-prompt/actions/workflows/verify.yml)
 
 📖 **Léelo en:** [English](README.md) · Español (este archivo)
 
-Skills portables de Claude Code extraídas de `the-hybrids-planning-project`, listas para llevar a cualquier otro proyecto. Los nombres específicos del proyecto original (YugaStore, MCP, Unleash, YugabyteDB) se reemplazaron por `<<PLACEHOLDERS>>` que el agente receptor debe completar antes de ejecutar las skills.
+Un **creador de meta-repo agnóstico al negocio y al modelo**. Clónalo junto a los repositorios que quieres mapear, apunta cualquier agente de código a él, y estudia cada repo, aprende los hábitos de review reales del equipo, los fusiona con las reglas oficiales de cada lenguaje y genera un `meta-repo/` independiente cuyo `AGENTS.md` se vuelve un hub de contexto cross-repo para todo tu conjunto de proyectos.
+
+También incluye el bundle de skills portables (`skills/`) que usa — slash commands reutilizables que puedes llevar a cualquier proyecto. Los nombres específicos del proyecto original se reemplazan por `<<PLACEHOLDERS>>` que el agente receptor completa.
 
 ## ¿Acabas de clonar este repo? Haz esto primero
 
@@ -44,7 +46,17 @@ Lee y ejecuta onboarding-prompt.md sobre todos los repositorios de esta carpeta 
 
 Una vez que apruebes el `meta-repo/` generado:
 
-1. **Retira el creador.** Borra la carpeta clonada `ai-meta-repo-prompt/` para que no se confunda con un proyecto más. De aquí en adelante trabajas **desde el meta-repo**, cuyo `AGENTS.md` (o `CLAUDE.md`) es tu hub de contexto cross-repo.
+1. **Retira el creador.** Borra la carpeta clonada `ai-meta-repo-prompt/` para que no se confunda con un proyecto más. De aquí en adelante trabajas **desde el meta-repo**, cuyo `AGENTS.md` es tu hub de contexto cross-repo.
+
+   `AGENTS.md` es el nombre canónico **agnóstico al modelo** (la convención cross-tool emergente). Si tu agente lee un archivo con otro nombre, apúntalo ahí — mantén `AGENTS.md` como la fuente de verdad y espeja/enlaza según haga falta:
+
+   | Tu agente / CLI | De dónde lee el hub de contexto |
+   |---|---|
+   | Genérico / compatible con `AGENTS.md` | `AGENTS.md` (canónico) |
+   | GitHub Copilot | `.github/copilot-instructions.md` |
+   | Cursor | `.cursor/rules/` (`*.mdc`) |
+   | Claude Code | `CLAUDE.md` |
+   | Otros | lo que ese runtime cargue primero — espeja `AGENTS.md` ahí |
 
 2. **Inicia una sesión de CLI nueva para cada tarea.** Abre una sesión de agente **nueva** que cargue primero el `AGENTS.md` del meta-repo. Haz esto cada vez que cambies de tarea — una sesión de larga duración acumula contexto obsoleto y sus respuestas se degradan. Sesión fresca = contexto limpio y preciso.
 
@@ -88,6 +100,12 @@ Para los gates profundos (**revisión adversarial del diff + sandbox real end-to
 VERIFY_AGENT_DONE=1 git commit -m "…"
 ```
 
+Para la parte mecánica y repetible de esa batería puedes correr el smoke test determinista directamente (clona 3 repos reales, corre la detección 5A + minería de PRs 5B y hace teardown):
+
+```bash
+scripts/sandbox-e2e.sh          # o: PR_LIMIT=5 scripts/sandbox-e2e.sh
+```
+
 Bypass de emergencia (desaconsejado): `git commit --no-verify`.
 
 **Red del lado servidor:** `.github/workflows/verify.yml` vuelve a correr el Gate 0 en cada push y pull request (`GATE0_ONLY=1 bash .githooks/pre-commit`), así que las regresiones estructurales se atrapan aunque alguien commitee con `--no-verify`. En CI el escaneo de tokens se amplía a todos los archivos versionados, no solo al contenido en staging.
@@ -127,7 +145,7 @@ Cada skill empieza con una tabla de "Adapter note". Busca `<<` en cada archivo y
 | `<<COMPOSE_FILE>>` | Ruta a tu `docker-compose.yml` |
 | `<<SERVICES>>` | La tabla de health-check de servicios |
 | `<<PRIMARY_URL>>` | La URL que el usuario debe abrir al final de `/dev-up` |
-| `<<DOCS_FILE>>` | El archivo único que bootstrapea a un agente nuevo (ej. `CLAUDE.md`, `AGENTS.md`) |
+| `<<DOCS_FILE>>` | El archivo único que bootstrapea a un agente nuevo (canónico agnóstico al modelo: `AGENTS.md`) |
 
 Si el proyecto receptor usa Jira/Linear en vez de GitHub Issues, reemplaza cada bloque `gh issue ...` con el CLI equivalente del tracker elegido. La estructura de la skill (cuándo actualizar estado, qué campos leer) se mantiene igual.
 

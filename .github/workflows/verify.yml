@@ -23,3 +23,19 @@ jobs:
           echo "Gate 0 passed on CI."
           echo "Deep gates (adversarial review + sandbox e2e) require an agent:"
           echo "  run skills/verify-meta-repo.md locally before merging."
+
+  smoke:
+    name: Sandbox e2e smoke test
+    runs-on: ubuntu-latest
+    needs: gate0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run deterministic smoke test (5A detection + 5B mining)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_LIMIT: "5"
+        run: |
+          chmod +x scripts/sandbox-e2e.sh
+          scripts/sandbox-e2e.sh
+
