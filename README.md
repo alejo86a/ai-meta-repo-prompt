@@ -15,7 +15,9 @@ That's the only setup step. The server-side safety net (a GitHub Action that re-
 
 ## Create your meta-repo (optimal starter prompt)
 
-Clone this folder **next to** the repositories you want it to study (they should be sibling folders under a common parent), then paste this to your coding agent (Copilot, Claude Code, etc.) opened at that parent folder:
+**Where to clone.** Clone this repo into the folder that already holds all the projects you want to map — the studied repos should be **sibling folders** under a common parent. Then open a coding agent (Claude Code, Copilot, or any CLI) **at that parent folder**, not inside a single project.
+
+**The starter prompt.** Paste this to the agent:
 
 ```text
 Read and execute ai-meta-repo-prompt/onboarding-prompt.md against every repository in this
@@ -33,15 +35,29 @@ Short version (if the agent already has this repo in context):
 Lee y ejecuta onboarding-prompt.md sobre todos los repositorios de esta carpeta y genera el meta-repo/.
 ```
 
-## Meta-repo creator (start here)
+**Give it feedback while it runs.** It won't be perfect on the first pass — that's expected. When the discovery report or a generated file is off, **tell it what's wrong and let it fix it** (don't hand-edit the output yourself). The feedback is what tunes the result to your business, and the more you correct it early, the sharper the meta-repo becomes.
 
-`onboarding-prompt.md` is a **business-agnostic meta-repo creator**. Clone this folder next to the repositories you want it to study, then point an agent at it:
+## After the meta-repo exists — the working loop
 
-```text
-Lee y ejecuta onboarding-prompt.md sobre los repositorios de esta carpeta.
-```
+Once you've approved the generated `meta-repo/`:
 
-What it does on the first run (all logic lives in `onboarding-prompt.md`, not in the trigger):
+1. **Retire the creator.** Delete the cloned `ai-meta-repo-prompt/` folder so it isn't mistaken for one more project repo. From here on you work **from the meta-repo**, whose `AGENTS.md` (or `CLAUDE.md`) is your cross-repo context hub.
+
+2. **Start a fresh CLI session for each task.** Open a **new** agent session that loads the meta-repo's `AGENTS.md` first. Do this every time you switch tasks — a long-lived session accumulates stale context and its answers degrade. Fresh session = clean, accurate context.
+
+3. **Run a two-terminal build/review loop.** Keep **one** agent terminal for *writing* code and a **separate** one for *reviewing* it:
+   - Terminal A implements the change.
+   - Terminal B (fresh context) reviews the diff against the meta-repo's standards.
+   - Back to A to address the review, back to B to re-review.
+   - Iterate until **B approves** — the reviewer, not the author, is the gate.
+
+   Splitting author and reviewer into different sessions avoids the model rubber-stamping its own work.
+
+4. **Let it get better as you go.** The meta-repo is self-improving: when the agent hits a rule that's missing, ambiguous, or wrong, point it out and let it propose a small, approved update back into `AGENTS.md`/`docs/`. Corrections compound — the setup sharpens the more you build with it. Again: **describe the mistake, don't silently fix it for the model.**
+
+## Meta-repo creator (what it does)
+
+`onboarding-prompt.md` is a **business-agnostic meta-repo creator**. On the first run (all logic lives in `onboarding-prompt.md`, not in the trigger):
 
 1. **Studies every repo in the parent folder** — 2, 5, 10, however many — detecting stack, languages, and existing conventions.
 2. **Mines the last 20 PRs per repo** via `gh` (consent-gated, GitHub-only, best-effort; asks for a fine-grained token stored under a git-ignored `.env/` if needed) to learn the team's real, enforced review habits.
