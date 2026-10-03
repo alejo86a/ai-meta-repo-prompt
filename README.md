@@ -8,6 +8,8 @@ A **business-agnostic, model-agnostic meta-repo creator**. Clone it next to the 
 
 It also ships the portable skills bundle (`skills/`) it uses — reusable slash commands you can drop into any project. Project-specific names from the source project are replaced with `<<PLACEHOLDERS>>` the receiving agent fills in.
 
+> **Built with its own discipline applied to itself.** Every change to this repo has to survive a deterministic pre-commit gate plus an adversarial AI review and a real sandbox end-to-end run before it merges — see [Verifying changes to this repo](#verifying-changes-to-this-repo-pre-commit). The [CHANGELOG](CHANGELOG.md) tracks the project's own evolution the same way it expects the meta-repos it generates to be tracked.
+
 ## Just cloned this repo? Do this first
 
 ```bash

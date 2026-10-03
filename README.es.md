@@ -8,6 +8,8 @@ Un **creador de meta-repo agnóstico al negocio y al modelo**. Clónalo junto a 
 
 También incluye el bundle de skills portables (`skills/`) que usa — slash commands reutilizables que puedes llevar a cualquier proyecto. Los nombres específicos del proyecto original se reemplazan por `<<PLACEHOLDERS>>` que el agente receptor completa.
 
+> **Construido aplicándose su propia disciplina.** Todo cambio a este repo debe superar un gate pre-commit determinístico más una revisión adversarial con IA y una ejecución real end-to-end en sandbox antes de mergear — ver [Verificar cambios a este repo](#verificar-cambios-a-este-repo-pre-commit). El [CHANGELOG](CHANGELOG.md) registra la evolución del propio proyecto del mismo modo en que espera que se registren los meta-repos que genera.
+
 ## ¿Acabas de clonar este repo? Haz esto primero
 
 ```bash
